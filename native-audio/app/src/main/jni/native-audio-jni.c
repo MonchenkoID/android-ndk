@@ -24,7 +24,9 @@
 #include <assert.h>
 #include <jni.h>
 #include <string.h>
-
+#include <stdio.h>
+FILE* rawFile = NULL;
+int bClosing = 0;
 
 // for __android_log_print(ANDROID_LOG_INFO, "YourApp", "formatted message");
 // #include <android/log.h>
@@ -37,7 +39,7 @@
 #include <sys/types.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
-
+#include <fcntl.h>
 // pre-recorded sound clips, both are 8 kHz mono 16-bit signed little endian
 static const char hello[] =
 #include "hello_clip.h"
@@ -645,16 +647,30 @@ jboolean Java_com_example_nativeaudio_NativeAudio_selectClip(JNIEnv* env, jclass
         break;
     case 4:     // CLIP_PLAYBACK
         nextBuffer = createResampledBuf(4, SL_SAMPLINGRATE_16, &nextSize);
+
+            int fillle;
+            fillle = open("storage/emulated/0/rawFile1.pcm", O_CREAT, "wb");
+            if(fillle>-1){
+            rawFile = fopen("storage/emulated/0/rawFile1.pcm", "wb");
         // we recorded at 16 kHz, but are playing buffers at 8 Khz, so do a primitive down-sample
         if(!nextBuffer) {
             unsigned i;
-            for (i = 0; i < recorderSize; i += 2 * sizeof(short)) {
-                recorderBuffer[i >> 2] = recorderBuffer[i >> 1];
+            for (i = 0; i < recorderSize; i += 1 * sizeof(short)) {
+                int jj;
+                jj = i >> 1;
+                recorderBuffer[jj] = recorderBuffer[jj];
+
+                    fwrite(recorderBuffer[jj], jj, 1, rawFile);
+
             }
             recorderSize >>= 1;
             nextBuffer = recorderBuffer;
             nextSize = recorderSize;
         }
+            fclose(rawFile);
+            rawFile = NULL;
+        }
+
         break;
     default:
         nextBuffer = NULL;
